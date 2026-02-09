@@ -2,6 +2,12 @@
 
 Here are some useful automation examples for your myPV AC THOR integration.
 
+**Note**: Sensor entity IDs follow the pattern `sensor.<sensor_name>`. For example:
+- `sensor.solar_forecast_today`
+- `sensor.photovoltaic_total`
+- `sensor.device_status`
+- `sensor.battery_storage_soc`
+
 ## Monitor High Power Consumption
 
 ```yaml
@@ -105,6 +111,8 @@ entities:
 
 ## Solar Forecast Card with Hourly Data
 
+**Note**: This example requires the [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row) custom card from HACS.
+
 ```yaml
 type: custom:multiple-entity-row
 entity: sensor.solar_forecast_today
@@ -112,6 +120,21 @@ name: Solar Forecast Today
 secondary_info:
   attribute: hourly_forecast
   format: yaml
+```
+
+Alternatively, use the standard template card to display hourly data:
+
+```yaml
+type: markdown
+content: >
+  ## Solar Forecast Today
+
+  Total: {{ states('sensor.solar_forecast_today') }} Wh
+
+  ### Hourly Breakdown
+  {% for time, value in state_attr('sensor.solar_forecast_today', 'hourly_forecast').items() %}
+  - {{ time }}: {{ value }} Wh
+  {% endfor %}
 ```
 
 ## Energy Dashboard Integration

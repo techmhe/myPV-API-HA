@@ -821,10 +821,8 @@ def _create_forecast_sensors(
             sensor_name = "Solar Forecast Today"
         elif i == 1:
             sensor_name = "Solar Forecast Tomorrow"
-        elif i == 2:
+        else:  # i == 2
             sensor_name = "Solar Forecast Day After Tomorrow"
-        else:
-            continue
         
         entities.append(
             MyPVForecastSensor(
