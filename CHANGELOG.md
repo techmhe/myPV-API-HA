@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - Added proper unit conversions:
   - Temperature sensors now correctly convert from 0.1°C to °C
   - Current sensors now correctly convert from 0.1A to A
-  - Frequency sensors now correctly convert from mH (millihertz) to Hz
+  - Frequency sensors now correctly convert from mHz (milliHertz) to Hz
 - Added 146 sensor definitions with proper device classes and state classes
 - Device status sensor now shows human-readable values (e.g., "Standby", "Heating", "Error")
 - Ethernet mode sensor now shows human-readable values (e.g., "LAN", "WLAN", "AP")

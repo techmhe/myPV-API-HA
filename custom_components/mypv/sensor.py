@@ -38,7 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Sensor definitions based on myPV API documentation
 # These will be mapped from API responses to sensor entities
-# Units are based on the API schema: W (Watt), 0.1A (Ampere), 0.1°C (Celsius), mH (millihertz), etc.
+# Units are based on the API schema: W (Watt), 0.1A (Ampere), 0.1°C (Celsius), mHz (milliHertz), etc.
 SENSOR_TYPES = {
     # Status and state sensors
     "9s_state": {
@@ -863,7 +863,7 @@ class MyPVSensor(CoordinatorEntity, SensorEntity):
             self._attr_state_class = sensor_config["state_class"]
 
         # Device info - try to get device type from coordinator data
-        device_model = "AC THOR"  # default
+        device_model = "myPV Device"  # default fallback
         if coordinator.data:
             flat_data = _flatten_dict(coordinator.data)
             device_type = flat_data.get("device")
