@@ -47,9 +47,24 @@ automation:
         data:
           message: >
             Today's myPV stats:
-            Total Energy: {{ states('sensor.mypv_ac_thor_xxxxx_total_energy') }} kWh
-            Solar Forecast Tomorrow: {{ states('sensor.mypv_ac_thor_xxxxx_solar_forecast_tomorrow') }} kWh
+            Solar Forecast Tomorrow: {{ states('sensor.solar_forecast_tomorrow') }} Wh
           title: "Daily myPV Report"
+```
+
+## Solar Forecast Alert
+
+```yaml
+automation:
+  - alias: "High Solar Production Expected"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.solar_forecast_tomorrow
+        above: 5000
+    action:
+      - service: notify.mobile_app
+        data:
+          message: "High solar production expected tomorrow: {{ states('sensor.solar_forecast_tomorrow') }} Wh"
+          title: "Solar Forecast Alert"
 ```
 
 ## Temperature Monitoring
@@ -72,18 +87,31 @@ automation:
 
 ```yaml
 type: entities
-title: myPV AC THOR
+title: myPV Device
 entities:
-  - entity: sensor.mypv_ac_thor_xxxxx_total_power
-    name: Current Power
-  - entity: sensor.mypv_ac_thor_xxxxx_total_energy
-    name: Total Energy
-  - entity: sensor.mypv_ac_thor_xxxxx_soc
+  - entity: sensor.device_status
+    name: Status
+  - entity: sensor.photovoltaic_total
+    name: PV Power
+  - entity: sensor.battery_storage_soc
     name: Battery SOC
-  - entity: sensor.mypv_ac_thor_xxxxx_temperature_channel_1
-    name: Temperature Ch1
-  - entity: sensor.mypv_ac_thor_xxxxx_solar_forecast_today
+  - entity: sensor.temperature_1
+    name: Temperature
+  - entity: sensor.solar_forecast_today
     name: Solar Forecast Today
+  - entity: sensor.solar_forecast_tomorrow
+    name: Solar Forecast Tomorrow
+```
+
+## Solar Forecast Card with Hourly Data
+
+```yaml
+type: custom:multiple-entity-row
+entity: sensor.solar_forecast_today
+name: Solar Forecast Today
+secondary_info:
+  attribute: hourly_forecast
+  format: yaml
 ```
 
 ## Energy Dashboard Integration

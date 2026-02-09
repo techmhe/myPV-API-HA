@@ -21,6 +21,12 @@ All notable changes to this project will be documented in this file.
 - Support for current sensors (A)
 - Support for frequency sensor (Hz)
 - Support for time-based sensors (minutes, hours, days)
+- **Proper solar forecast implementation**:
+  - Solar Forecast Today sensor with daily total in Wh
+  - Solar Forecast Tomorrow sensor with daily total in Wh
+  - Solar Forecast Day After Tomorrow sensor with daily total in Wh
+  - Hourly forecast data included as sensor attributes
+  - Automatic date detection from API response
 - Support for all myPV API sensor types including:
   - Power sensors for photovoltaic, battery storage, heat pump, and charging station
   - Communication status for connected devices
