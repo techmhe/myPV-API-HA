@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 import aiohttp
-import async_timeout
 
 from .const import API_BASE_URL, API_TIMEOUT
 
@@ -30,7 +29,7 @@ class MyPVApiClient:
         }
 
         try:
-            async with async_timeout.timeout(API_TIMEOUT):
+            async with asyncio.timeout(API_TIMEOUT):
                 async with self._session.get(url, headers=headers) as response:
                     response.raise_for_status()
                     return await response.json()
