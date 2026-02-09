@@ -1,0 +1,8 @@
+{
+  "name": "myPV AC THOR",
+  "content_in_root": false,
+  "render_readme": true,
+  "filename": "mypv",
+  "country": ["AT", "DE", "CH"],
+  "homeassistant": "2023.1.0"
+}
