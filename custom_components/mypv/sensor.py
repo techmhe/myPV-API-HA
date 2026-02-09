@@ -1,7 +1,7 @@
 """Sensor platform for myPV AC THOR integration."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import timedelta, time as datetime_time
 import logging
 from typing import Any
 
@@ -838,14 +838,14 @@ def _create_forecast_sensors(
     if sorted_dates:
         today_date = sorted_dates[0]
         
-        # Define time periods
+        # Define time periods (using continuous ranges with no gaps)
         time_periods = [
-            ("night", "Solar Forecast Night", "00:00:00", "06:00:00"),
-            ("morning", "Solar Forecast Morning", "06:01:00", "09:00:00"),
-            ("late_morning", "Solar Forecast Late Morning", "09:01:00", "12:00:00"),
-            ("midday", "Solar Forecast Mid Day", "12:01:00", "15:00:00"),
-            ("afternoon", "Solar Forecast Afternoon", "15:01:00", "18:00:00"),
-            ("evening", "Solar Forecast Evening", "18:01:00", "23:59:00"),
+            ("night", "Solar Forecast Night", "00:00:00", "06:00:59"),
+            ("morning", "Solar Forecast Morning", "06:01:00", "09:00:59"),
+            ("late_morning", "Solar Forecast Late Morning", "09:01:00", "12:00:59"),
+            ("midday", "Solar Forecast Mid Day", "12:01:00", "15:00:59"),
+            ("afternoon", "Solar Forecast Afternoon", "15:01:00", "18:00:59"),
+            ("evening", "Solar Forecast Evening", "18:01:00", "23:59:59"),
         ]
         
         for period_id, period_name, start_time, end_time in time_periods:
@@ -1135,13 +1135,31 @@ class MyPVTimebasedForecastSensor(CoordinatorEntity, SensorEntity):
             model=device_model,
         )
 
+    def _parse_time(self, time_str: str) -> datetime_time | None:
+        """Parse a time string into a time object."""
+        try:
+            # Handle HH:MM:SS format
+            parts = time_str.split(":")
+            if len(parts) == 3:
+                hour, minute, second = int(parts[0]), int(parts[1]), int(parts[2])
+                return datetime_time(hour, minute, second)
+            elif len(parts) == 2:
+                hour, minute = int(parts[0]), int(parts[1])
+                return datetime_time(hour, minute, 0)
+        except (ValueError, AttributeError):
+            _LOGGER.warning("Failed to parse time string: %s", time_str)
+        return None
+
     def _is_time_in_range(self, time_str: str) -> bool:
         """Check if a time string is within the period range."""
-        # Handle edge case for evening period that goes until 23:59
-        # The API might have times like 23:59:59 or just 23:59:00
-        if self._period_id == "evening":
-            return time_str >= self._start_time
-        return self._start_time <= time_str <= self._end_time
+        time_obj = self._parse_time(time_str)
+        start_obj = self._parse_time(self._start_time)
+        end_obj = self._parse_time(self._end_time)
+        
+        if time_obj is None or start_obj is None or end_obj is None:
+            return False
+        
+        return start_obj <= time_obj <= end_obj
 
     @property
     def native_value(self) -> Any:
@@ -1158,16 +1176,19 @@ class MyPVTimebasedForecastSensor(CoordinatorEntity, SensorEntity):
         for timestamp, value in watt_hours.items():
             # Check if timestamp is for today's date
             if timestamp.startswith(self._date):
-                # Extract time part
-                time_part = timestamp.split(" ")[1] if " " in timestamp else ""
-                
-                # Check if time is in our range
-                if time_part and self._is_time_in_range(time_part):
-                    if value is not None and isinstance(value, (int, float)):
-                        total += value
-                        hourly_values[time_part] = value
+                # Extract time part (handle "YYYY-MM-DD HH:MM:SS" format)
+                parts = timestamp.split(" ")
+                if len(parts) >= 2:
+                    time_part = parts[1]
+                    
+                    # Check if time is in our range
+                    if self._is_time_in_range(time_part):
+                        if value is not None and isinstance(value, (int, float)):
+                            total += value
+                            hourly_values[time_part] = value
         
-        return total if total > 0 else None
+        # Return 0 if no production, not None (0 is a valid energy value)
+        return total
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
