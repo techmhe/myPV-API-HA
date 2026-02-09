@@ -46,7 +46,7 @@ Visit the [myPV API documentation](https://api.my-pv.com/api-docs/) to obtain yo
 
 This integration implements the following myPV API endpoints:
 
-- `/api/v1/device/{serial}/data` - Device data (updated every 60 seconds)
+- `/api/v1/device/{serial}/data` - Device data (updated every 30 seconds)
 - `/api/v1/device/{serial}/data/soc` - State of charge (updated every 5 minutes)
 - `/api/v1/device/{serial}/solarForecast` - Solar forecast (updated every hour)
   - Returns PV energy forecast for today and up to 2 additional days (3 days total)
@@ -103,6 +103,15 @@ The integration automatically creates sensors for all available data from your d
 - Solar Forecast Tomorrow (Wh) - Total expected production for tomorrow
 - Solar Forecast Day After Tomorrow (Wh) - Total expected production for day after tomorrow
 - Each forecast sensor includes hourly breakdown in attributes
+
+**Time-Based Solar Forecast (Today Only)**
+- Solar Forecast Night (Wh) - Expected production from 00:00 to 06:00
+- Solar Forecast Morning (Wh) - Expected production from 06:01 to 09:00
+- Solar Forecast Late Morning (Wh) - Expected production from 09:01 to 12:00
+- Solar Forecast Mid Day (Wh) - Expected production from 12:01 to 15:00
+- Solar Forecast Afternoon (Wh) - Expected production from 15:01 to 18:00
+- Solar Forecast Evening (Wh) - Expected production from 18:01 to 23:59
+- Each time-based sensor includes hourly breakdown in attributes
 
 Each sensor is properly configured with appropriate device classes, state classes, and units of measurement.
 

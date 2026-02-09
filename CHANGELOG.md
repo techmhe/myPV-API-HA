@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Device status sensor now shows human-readable values (e.g., "Standby", "Heating", "Error")
 - Ethernet mode sensor now shows human-readable values (e.g., "LAN", "WLAN", "AP")
 - Device model now dynamically set based on API response (AC THOR, AC ELWA-E, or AC ELWA 2)
+- **Device data polling interval reduced from 60s to 30s** for more responsive updates (API updates every 10s)
 
 ### Added
 - Support for voltage sensors (V)
@@ -27,6 +28,15 @@ All notable changes to this project will be documented in this file.
   - Solar Forecast Day After Tomorrow sensor with daily total in Wh
   - Hourly forecast data included as sensor attributes
   - Automatic date detection from API response
+- **Time-based solar forecast sensors for today**:
+  - Solar Forecast Night (00:00 - 06:00)
+  - Solar Forecast Morning (06:01 - 09:00)
+  - Solar Forecast Late Morning (09:01 - 12:00)
+  - Solar Forecast Mid Day (12:01 - 15:00)
+  - Solar Forecast Afternoon (15:01 - 18:00)
+  - Solar Forecast Evening (18:01 - 23:59)
+  - Each time-based sensor sums hourly values within its period
+  - Hourly breakdown available in sensor attributes
 - Support for all myPV API sensor types including:
   - Power sensors for photovoltaic, battery storage, heat pump, and charging station
   - Communication status for connected devices

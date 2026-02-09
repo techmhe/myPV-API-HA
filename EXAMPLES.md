@@ -73,6 +73,29 @@ automation:
           title: "Solar Forecast Alert"
 ```
 
+## Time-Based Solar Forecast Automation
+
+```yaml
+automation:
+  - alias: "Morning Solar Production Alert"
+    trigger:
+      - platform: time
+        at: "06:00:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.solar_forecast_morning
+        above: 200
+    action:
+      - service: notify.mobile_app
+        data:
+          message: >
+            Good morning! Expected solar production:
+            Morning (06:01-09:00): {{ states('sensor.solar_forecast_morning') }} Wh
+            Late Morning (09:01-12:00): {{ states('sensor.solar_forecast_late_morning') }} Wh
+            Mid Day (12:01-15:00): {{ states('sensor.solar_forecast_mid_day') }} Wh
+          title: "Solar Production Forecast"
+```
+
 ## Temperature Monitoring
 
 ```yaml
@@ -107,6 +130,24 @@ entities:
     name: Solar Forecast Today
   - entity: sensor.solar_forecast_tomorrow
     name: Solar Forecast Tomorrow
+```
+
+## Time-Based Solar Forecast Dashboard
+
+```yaml
+type: entities
+title: Today's Solar Forecast by Time
+entities:
+  - entity: sensor.solar_forecast_morning
+    name: Morning (06:01-09:00)
+  - entity: sensor.solar_forecast_late_morning
+    name: Late Morning (09:01-12:00)
+  - entity: sensor.solar_forecast_mid_day
+    name: Mid Day (12:01-15:00)
+  - entity: sensor.solar_forecast_afternoon
+    name: Afternoon (15:01-18:00)
+  - entity: sensor.solar_forecast_evening
+    name: Evening (18:01-23:59)
 ```
 
 ## Solar Forecast Card with Hourly Data
