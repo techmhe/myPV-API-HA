@@ -725,8 +725,8 @@ async def async_setup_entry(
     # Create sensors from forecast data
     if forecast_coordinator.data:
         entities.extend(
-            _create_sensors_from_data(
-                forecast_coordinator, serial, entry.entry_id, "forecast"
+            _create_forecast_sensors(
+                forecast_coordinator, serial, entry.entry_id
             )
         )
 
@@ -787,6 +787,56 @@ def _flatten_dict(data: dict, parent_key: str = "", sep: str = "_") -> dict:
         else:
             items.append((new_key, value))
     return dict(items)
+
+
+def _create_forecast_sensors(
+    coordinator: MyPVDataUpdateCoordinator,
+    serial: str,
+    entry_id: str,
+) -> list[SensorEntity]:
+    """Create sensor entities from solar forecast data."""
+    entities = []
+    
+    if not coordinator.data:
+        return entities
+    
+    # The forecast data has a structure like:
+    # {
+    #   "watt_hours": {"2026-01-14 08:00:00": 97, ...},
+    #   "watt_hours_day": {"2026-01-14": 4312, ...}
+    # }
+    
+    watt_hours_day = coordinator.data.get("watt_hours_day", {})
+    
+    if not watt_hours_day:
+        _LOGGER.warning("No watt_hours_day data found in solar forecast")
+        return entities
+    
+    # Sort dates to identify today, tomorrow, and day after tomorrow
+    sorted_dates = sorted(watt_hours_day.keys())
+    
+    # Create sensors for each day
+    for i, date in enumerate(sorted_dates[:3]):  # Maximum 3 days
+        if i == 0:
+            sensor_name = "Solar Forecast Today"
+        elif i == 1:
+            sensor_name = "Solar Forecast Tomorrow"
+        elif i == 2:
+            sensor_name = "Solar Forecast Day After Tomorrow"
+        else:
+            continue
+        
+        entities.append(
+            MyPVForecastSensor(
+                coordinator=coordinator,
+                serial=serial,
+                entry_id=entry_id,
+                date=date,
+                name=sensor_name,
+            )
+        )
+    
+    return entities
 
 
 class MyPVDataUpdateCoordinator(DataUpdateCoordinator):
@@ -937,3 +987,78 @@ class MyPVSensor(CoordinatorEntity, SensorEntity):
             "serial": self._serial,
             "data_type": self._data_type,
         }
+
+
+class MyPVForecastSensor(CoordinatorEntity, SensorEntity):
+    """Representation of a myPV solar forecast sensor."""
+
+    def __init__(
+        self,
+        coordinator: MyPVDataUpdateCoordinator,
+        serial: str,
+        entry_id: str,
+        date: str,
+        name: str,
+    ) -> None:
+        """Initialize the forecast sensor."""
+        super().__init__(coordinator)
+        
+        self._serial = serial
+        self._date = date
+        self._attr_name = name
+        self._attr_unique_id = f"{entry_id}_forecast_{date}"
+        
+        # Set sensor properties for energy forecast
+        self._attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
+        self._attr_device_class = SensorDeviceClass.ENERGY
+        self._attr_state_class = SensorStateClass.TOTAL
+        
+        # Device info
+        device_model = "myPV Device"
+        if coordinator.data:
+            flat_data = _flatten_dict(coordinator.data)
+            device_type = flat_data.get("device")
+            if device_type:
+                device_model = device_type
+        
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, serial)},
+            name=f"{NAME} {serial}",
+            manufacturer="myPV",
+            model=device_model,
+        )
+
+    @property
+    def native_value(self) -> Any:
+        """Return the forecasted energy for the day."""
+        if self.coordinator.data is None:
+            return None
+        
+        watt_hours_day = self.coordinator.data.get("watt_hours_day", {})
+        return watt_hours_day.get(self._date)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes including hourly forecast."""
+        attributes = {
+            "serial": self._serial,
+            "date": self._date,
+        }
+        
+        # Add hourly forecast data if available
+        if self.coordinator.data:
+            watt_hours = self.coordinator.data.get("watt_hours", {})
+            
+            # Filter hourly data for this specific date
+            hourly_data = {}
+            for timestamp, value in watt_hours.items():
+                # Check if timestamp starts with our date
+                if timestamp.startswith(self._date):
+                    # Extract just the hour part for cleaner attributes
+                    time_part = timestamp.split(" ")[1] if " " in timestamp else timestamp
+                    hourly_data[time_part] = value
+            
+            if hourly_data:
+                attributes["hourly_forecast"] = hourly_data
+        
+        return attributes
