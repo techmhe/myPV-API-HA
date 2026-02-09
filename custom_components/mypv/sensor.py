@@ -219,7 +219,12 @@ def _flatten_dict(data: dict, parent_key: str = "", sep: str = "_") -> dict:
     """Flatten nested dictionary."""
     # Handle non-dict inputs gracefully
     if not isinstance(data, dict):
-        _LOGGER.warning("Expected dict but got %s: %s", type(data).__name__, data)
+        data_preview = str(data)[:50] if data else "None"
+        _LOGGER.warning(
+            "Expected dict but got %s. Data preview: %s...",
+            type(data).__name__,
+            data_preview
+        )
         return {}
     
     items = []
