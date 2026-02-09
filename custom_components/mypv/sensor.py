@@ -217,6 +217,11 @@ def _create_sensors_from_data(
 
 def _flatten_dict(data: dict, parent_key: str = "", sep: str = "_") -> dict:
     """Flatten nested dictionary."""
+    # Handle non-dict inputs gracefully
+    if not isinstance(data, dict):
+        _LOGGER.warning("Expected dict but got %s: %s", type(data).__name__, data)
+        return {}
+    
     items = []
     for key, value in data.items():
         new_key = f"{parent_key}{sep}{key}" if parent_key else key
