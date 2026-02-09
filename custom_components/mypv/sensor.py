@@ -834,6 +834,34 @@ def _create_forecast_sensors(
             )
         )
     
+    # Create time-based sensors for today only
+    if sorted_dates:
+        today_date = sorted_dates[0]
+        
+        # Define time periods
+        time_periods = [
+            ("night", "Solar Forecast Night", "00:00:00", "06:00:00"),
+            ("morning", "Solar Forecast Morning", "06:01:00", "09:00:00"),
+            ("late_morning", "Solar Forecast Late Morning", "09:01:00", "12:00:00"),
+            ("midday", "Solar Forecast Mid Day", "12:01:00", "15:00:00"),
+            ("afternoon", "Solar Forecast Afternoon", "15:01:00", "18:00:00"),
+            ("evening", "Solar Forecast Evening", "18:01:00", "23:59:00"),
+        ]
+        
+        for period_id, period_name, start_time, end_time in time_periods:
+            entities.append(
+                MyPVTimebasedForecastSensor(
+                    coordinator=coordinator,
+                    serial=serial,
+                    entry_id=entry_id,
+                    date=today_date,
+                    period_id=period_id,
+                    name=period_name,
+                    start_time=start_time,
+                    end_time=end_time,
+                )
+            )
+    
     return entities
 
 
@@ -1055,6 +1083,114 @@ class MyPVForecastSensor(CoordinatorEntity, SensorEntity):
                     # Extract just the hour part for cleaner attributes
                     time_part = timestamp.split(" ")[1] if " " in timestamp else timestamp
                     hourly_data[time_part] = value
+            
+            if hourly_data:
+                attributes["hourly_forecast"] = hourly_data
+        
+        return attributes
+
+
+class MyPVTimebasedForecastSensor(CoordinatorEntity, SensorEntity):
+    """Representation of a myPV time-based solar forecast sensor."""
+
+    def __init__(
+        self,
+        coordinator: MyPVDataUpdateCoordinator,
+        serial: str,
+        entry_id: str,
+        date: str,
+        period_id: str,
+        name: str,
+        start_time: str,
+        end_time: str,
+    ) -> None:
+        """Initialize the time-based forecast sensor."""
+        super().__init__(coordinator)
+        
+        self._serial = serial
+        self._date = date
+        self._period_id = period_id
+        self._start_time = start_time
+        self._end_time = end_time
+        self._attr_name = name
+        self._attr_unique_id = f"{entry_id}_forecast_{date}_{period_id}"
+        
+        # Set sensor properties for energy forecast
+        self._attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
+        self._attr_device_class = SensorDeviceClass.ENERGY
+        self._attr_state_class = SensorStateClass.TOTAL
+        
+        # Device info
+        device_model = "myPV Device"
+        if coordinator.data:
+            flat_data = _flatten_dict(coordinator.data)
+            device_type = flat_data.get("device")
+            if device_type:
+                device_model = device_type
+        
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, serial)},
+            name=f"{NAME} {serial}",
+            manufacturer="myPV",
+            model=device_model,
+        )
+
+    def _is_time_in_range(self, time_str: str) -> bool:
+        """Check if a time string is within the period range."""
+        # Handle edge case for evening period that goes until 23:59
+        # The API might have times like 23:59:59 or just 23:59:00
+        if self._period_id == "evening":
+            return time_str >= self._start_time
+        return self._start_time <= time_str <= self._end_time
+
+    @property
+    def native_value(self) -> Any:
+        """Return the forecasted energy for the time period."""
+        if self.coordinator.data is None:
+            return None
+        
+        watt_hours = self.coordinator.data.get("watt_hours", {})
+        
+        # Sum up all hourly values within the time period for today's date
+        total = 0
+        hourly_values = {}
+        
+        for timestamp, value in watt_hours.items():
+            # Check if timestamp is for today's date
+            if timestamp.startswith(self._date):
+                # Extract time part
+                time_part = timestamp.split(" ")[1] if " " in timestamp else ""
+                
+                # Check if time is in our range
+                if time_part and self._is_time_in_range(time_part):
+                    if value is not None and isinstance(value, (int, float)):
+                        total += value
+                        hourly_values[time_part] = value
+        
+        return total if total > 0 else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes including hourly breakdown."""
+        attributes = {
+            "serial": self._serial,
+            "date": self._date,
+            "period": self._period_id,
+            "start_time": self._start_time,
+            "end_time": self._end_time,
+        }
+        
+        # Add hourly forecast data for this time period
+        if self.coordinator.data:
+            watt_hours = self.coordinator.data.get("watt_hours", {})
+            
+            hourly_data = {}
+            for timestamp, value in watt_hours.items():
+                if timestamp.startswith(self._date):
+                    time_part = timestamp.split(" ")[1] if " " in timestamp else ""
+                    
+                    if time_part and self._is_time_in_range(time_part):
+                        hourly_data[time_part] = value
             
             if hourly_data:
                 attributes["hourly_forecast"] = hourly_data
