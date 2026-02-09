@@ -61,3 +61,7 @@ Each sensor is properly configured with appropriate device classes, state classe
 ## Support
 
 For issues, feature requests, or contributions, please visit the [GitHub repository](https://github.com/techmhe/myPV-API-HA/issues).
+
+## Examples
+
+See [EXAMPLES.md](EXAMPLES.md) for automation examples and dashboard configurations.
