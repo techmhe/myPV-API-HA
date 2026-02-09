@@ -29,7 +29,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     )
 
     if not await client.async_validate_connection():
-        raise Exception("Cannot connect to myPV API")
+        raise ConnectionError("Cannot connect to myPV API")
 
     return {"title": f"myPV AC THOR {data[CONF_SERIAL]}"}
 
@@ -48,9 +48,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
+            except ConnectionError:
+                _LOGGER.exception("Cannot connect to myPV API")
+                errors["base"] = "cannot_connect"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
-                errors["base"] = "cannot_connect"
+                errors["base"] = "unknown"
             else:
                 await self.async_set_unique_id(user_input[CONF_SERIAL])
                 self._abort_if_unique_id_configured()

@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure myPV AC THOR",
+        "description": "Enter your device serial number and API key from https://api.my-pv.com",
+        "data": {
+          "serial": "Device Serial Number",
+          "api_key": "API Key"
+        },
+        "data_description": {
+          "serial": "The serial number of your myPV AC THOR device",
+          "api_key": "Your API key from the myPV API portal"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to myPV API. Please check your serial number and API key.",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}
